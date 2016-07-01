@@ -64,13 +64,23 @@ FillBucket.prototype.addFeature = function(feature) {
     var polygons = classifyRings(lines, EARCUT_MAX_RINGS);
 
     var startGroup = this.prepareArrayGroup('fill', 0);
-    var startIndex = startGroup.layout.vertex.length;
+    var startVertex = startGroup.layout.vertex.length;
+
+    var indexes = {
+        startGroup: this.arrayGroups['fill'].length - 1,
+        startVertex: startVertex
+    };
 
     for (var i = 0; i < polygons.length; i++) {
         this.addPolygon(polygons[i]);
     }
 
-    this.populatePaintArrays('fill', {zoom: this.zoom}, feature.properties, startGroup, startIndex);
+    var endGroupIndex = this.arrayGroups['fill'].length - 1;
+    indexes.endGroup = endGroupIndex;
+    indexes.endVertex = this.arrayGroups['fill'][endGroupIndex].layout.vertex.length - 1;
+    this._featureIndexToArrayIndex[feature.index] = indexes;
+
+    this.populatePaintArrays('fill', {zoom: this.zoom}, feature.properties, startGroup.index, startVertex);
 };
 
 FillBucket.prototype.addPolygon = function(polygon) {

@@ -127,6 +127,20 @@ Bucket.prototype.populateBuffers = function() {
 };
 
 /**
+ * Update the buffers with feature properties, leaving geometries as-is.
+ * @private
+ */
+Bucket.prototype.updateBuffers = function(propertiesList) {
+    this.recalculateStyleLayers();
+
+    for (var i = 0; i < propertiesList.length; i++) {
+        var indexes = this._featureIndexToArrayIndex[i];
+        if (!indexes) continue;
+        this.populatePaintArrays('fill', {zoom: this.zoom}, propertiesList[i], indexes.startGroup, indexes.startVertex, indexes.endGroup, indexes.endVertex);
+    }
+};
+
+/**
  * Check if there is enough space available in the current array group for
  * `vertexLength` vertices. If not, append a new elementGroup. Should be called
  * by `populateBuffers` and its callees.
@@ -205,6 +219,10 @@ Bucket.prototype.prepareArrayGroup = function(programName, numVertices) {
  * @private
  */
 Bucket.prototype.createArrays = function() {
+    // mapping from `feature.index` to the start & end vertex array indexes.
+    // `feature.index` is the index into the _original_ source layer's feature
+    // list (as opposed to this bucket's post-filtered list).
+    this._featureIndexToArrayIndex = {};
     this.arrayGroups = {};
     this.arrayTypes = {};
 
@@ -327,15 +345,20 @@ Bucket.prototype.recalculateStyleLayers = function() {
     }
 };
 
-Bucket.prototype.populatePaintArrays = function(interfaceName, globalProperties, featureProperties, startGroup, startIndex) {
+Bucket.prototype.populatePaintArrays = function(interfaceName, globalProperties, featureProperties, startGroupIndex, startVertexIndex, endGroupIndex, endVertexIndex) {
     for (var l = 0; l < this.childLayers.length; l++) {
         var layer = this.childLayers[l];
         var groups = this.arrayGroups[interfaceName];
-        for (var g = startGroup.index; g < groups.length; g++) {
+        endGroupIndex = endGroupIndex || (groups.length - 1);
+
+        for (var g = startGroupIndex; g <= endGroupIndex; g++) {
             var group = groups[g];
             var length = group.layout.vertex.length;
             var vertexArray = group.paint[layer.id];
             vertexArray.resize(length);
+
+            var start = g === startGroupIndex ? startVertexIndex : 0;
+            var end = (endVertexIndex && g === endGroupIndex) ? endVertexIndex : length - 1;
 
             var attributes = this.paintAttributes[interfaceName][layer.id].attributes;
             for (var m = 0; m < attributes.length; m++) {
@@ -345,8 +368,7 @@ Bucket.prototype.populatePaintArrays = function(interfaceName, globalProperties,
                 var multiplier = attribute.multiplier || 1;
                 var components = attribute.components || 1;
 
-                var start = g === startGroup.index  ? startIndex : 0;
-                for (var i = start; i < length; i++) {
+                for (var i = start; i < end; i++) {
                     var vertex = vertexArray.get(i);
                     for (var c = 0; c < components; c++) {
                         var memberName = components > 1 ? (attribute.name + c) : attribute.name;

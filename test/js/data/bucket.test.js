@@ -44,7 +44,7 @@ test('Bucket', function(t) {
             group.layout.vertex.emplaceBack(point.x * 2, point.y * 2);
             group.layout.element.emplaceBack(1, 2, 3);
             group.layout.element2.emplaceBack(point.x, point.y);
-            this.populatePaintArrays('test', {}, feature.properties, group, startIndex);
+            this.populatePaintArrays('test', {}, feature.properties, group.index, startIndex, group.index, group.layout.vertex.length - 1);
         };
 
         return Class;

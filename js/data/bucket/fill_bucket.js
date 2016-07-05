@@ -80,7 +80,7 @@ FillBucket.prototype.addFeature = function(feature) {
     indexes.endVertex = this.arrayGroups['fill'][endGroupIndex].layout.vertex.length - 1;
     this._featureIndexToArrayIndex[feature.index] = indexes;
 
-    this.populatePaintArrays('fill', {zoom: this.zoom}, feature.properties, startGroup.index, startVertex);
+    this.populatePaintArrays('fill', {zoom: this.zoom}, feature.properties, indexes.startGroup, indexes.startVertex, indexes.endGroup, indexes.endVertex);
 };
 
 FillBucket.prototype.addPolygon = function(polygon) {
